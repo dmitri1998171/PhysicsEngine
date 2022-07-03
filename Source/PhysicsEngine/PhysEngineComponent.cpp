@@ -13,15 +13,13 @@ UPhysEngineComponent::UPhysEngineComponent()
     EnableLog = true;
     EnableGravity = true;
     Gravity = FVector(0, 0, GRAVITY);
-    Density = 1000;
+    Mass = 50;
     
     Parent = GetOwner();
     if (Parent != nullptr) {
         PlayerPos = Parent->GetActorLocation();
         BoundingBox = Parent->GetComponentsBoundingBox();
     }
-
-    Mass = Density * BoundingBox.GetVolume();
 }
 
 
@@ -40,10 +38,26 @@ void UPhysEngineComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	
+    Force = FVector(0, 0, 0);
+    
+    if(isFired) {
+        CalculateValues();
+        Force += Impulse;
+    }
+    
     CalculateValues();
-
     UseGravity();
+    
+    float X = (((AirResist + Wind) * Sk) + Gravity.GetComponentForAxis(EAxis::X));// * DeltaTime;
+    float Y = (((AirResist + Wind) * Sk) + Gravity.GetComponentForAxis(EAxis::Y));// * DeltaTime;
+    float Z = (((AirResist + Wind) * Sk) + Gravity.GetComponentForAxis(EAxis::Z));// * DeltaTime;
+    
+    Force.Set(X, Y, Z);
+//    Force += (Gravity + ((AirResist + Wind) * Sk));// * DeltaTime;
+    
+    PlayerPos = Parent->GetActorLocation();
+    Parent->SetActorLocation(PlayerPos + Force);
+    
     showLog(DeltaTime);
 }
 
@@ -56,7 +70,11 @@ void UPhysEngineComponent::PostInitProperties()
 }
 
 void UPhysEngineComponent::CalculateValues() {
-    Mass = Density * BoundingBox.GetVolume();
+    float X = Mass * Velocity.GetComponentForAxis(EAxis::X);
+    float Y = Mass * Velocity.GetComponentForAxis(EAxis::Y);
+    float Z = Mass * Velocity.GetComponentForAxis(EAxis::Z);
+    
+    Impulse.Set(X, Y, Z);
 }
 
 #if WITH_EDITOR
@@ -69,9 +87,8 @@ void UPhysEngineComponent::PostEditChangeProperty(FPropertyChangedEvent& Propert
 #endif
 
 void UPhysEngineComponent::UseGravity() {
-    if (EnableGravity) {
-        PlayerPos = Parent->GetActorLocation();
-        Parent->SetActorLocation(PlayerPos + Gravity);
+    if (!EnableGravity) {
+        Gravity = FVector(0, 0, 0);
     }
 }
 
@@ -79,11 +96,15 @@ void UPhysEngineComponent::showLog(float DeltaTime) {
     if(EnableLog && Parent) {
         PlayerPos = Parent->GetActorLocation();
         BoundingBox = Parent->GetComponentsBoundingBox();
-
-        GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::Printf(TEXT("bbox: %s"), *BoundingBox.ToString()));
-        GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::Printf(TEXT("bbox Volume: %f"), BoundingBox.GetVolume()));
-        GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::Printf(TEXT("Mass: %f"), Mass));
+        
+//        GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::Printf(TEXT("bbox: %s"), *BoundingBox.ToString()));
+//        GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::Printf(TEXT("bbox Volume: %f"), BoundingBox.GetVolume()));
+        
+        GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::Printf(TEXT("Gravity: %s"), *Gravity.ToString()));
+        GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::Printf(TEXT("Impulse: %s"), *Impulse.ToString()));
+        GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::Printf(TEXT("Force: %s"), *Force.ToString()));
         
         GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, FString::Printf(TEXT("pos: %s"), *PlayerPos.ToString()));
     }
 }
+

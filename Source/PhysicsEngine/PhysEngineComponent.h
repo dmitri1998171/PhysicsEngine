@@ -16,9 +16,13 @@ class PHYSICSENGINE_API UPhysEngineComponent : public UActorComponent
     AActor* Parent;
     FVector PlayerPos;
     FBox BoundingBox;
+    
+    FBox MeshBBox;
 
-    FVector Velocity;
     FVector Force;
+    FVector Impulse;
+    
+    bool isFired;
 
     UStaticMeshComponent* Mesh;
     
@@ -48,13 +52,21 @@ public:
     UPROPERTY(EditAnywhere, Category = Physics)
     FVector Gravity;
 
-    UPROPERTY(VisibleAnywhere, Category = "Physics\|Material")
+    UPROPERTY(EditAnywhere, Category = "Physics\|Material")
     float Mass;
 
-    UPROPERTY(EditAnywhere, Category = "Physics\|Material")
-    float Density;    // Плотность
+    UPROPERTY(EditAnywhere, Category = "Physics")
+    FVector Velocity;     // стартовая Скорость снаряда (зависит от типа орудия, из котор. стреляют)
 
-
+    UPROPERTY(EditAnywhere, Category = "Physics")
+    float AirResist;    // Сопротивление воздуха
+    
+    UPROPERTY(EditAnywhere, Category = "Physics")
+    float Wind;         // Ветер
+    
+    UPROPERTY(EditAnywhere, Category = "Physics")
+    float Sk;           // Sk - коэф. площади (на сколько ветер воздействует на объект)
+    
     UFUNCTION()
     void UseGravity();
 
